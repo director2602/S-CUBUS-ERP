@@ -13,10 +13,15 @@ export default function NewStudentPage({ params }: { params: { workspace: string
     setLoading(true);
     setError(null);
     try {
-      const student = await createStudent(formData);
-      router.push(`/w/${params.workspace}/students/${student.id}`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create student.");
+      const result = await createStudent(formData);
+      if (!result.ok || !result.studentId) {
+        setError(result.error ?? "Failed to create student.");
+        setLoading(false);
+        return;
+      }
+      router.push(`/w/${params.workspace}/students/${result.studentId}`);
+    } catch {
+      setError("Something went wrong creating the student. Please try again.");
       setLoading(false);
     }
   }

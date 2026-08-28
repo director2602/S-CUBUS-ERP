@@ -20,10 +20,15 @@ export default function NewExaminationPage({ params }: { params: { workspace: st
     setLoading(true);
     setError(null);
     try {
-      const exam = await createExamination(formData);
-      router.push(`/w/${params.workspace}/exams/${exam.id}`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create examination.");
+      const result = await createExamination(formData);
+      if (!result.ok || !result.examId) {
+        setError(result.error ?? "Failed to create examination.");
+        setLoading(false);
+        return;
+      }
+      router.push(`/w/${result.workspace ?? params.workspace}/exams/${result.examId}`);
+    } catch {
+      setError("Something went wrong creating the examination. Please try again.");
       setLoading(false);
     }
   }
