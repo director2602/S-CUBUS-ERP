@@ -12,12 +12,17 @@ const bodySchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  await requireRole("RESULT_OPERATOR");
-  const body = bodySchema.parse(await req.json());
+  try {
+    await requireRole("RESULT_OPERATOR");
+    const body = bodySchema.parse(await req.json());
 
-  const normalized = normalizeRows(body.rows, body.mapping as ColumnMapping);
-  const config = await buildExamConfig(body.examinationId, body.templateId);
-  const result = validateImportRows(normalized, config);
+    const normalized = normalizeRows(body.rows, body.mapping as ColumnMapping);
+    const config = await buildExamConfig(body.examinationId, body.templateId);
+    const result = validateImportRows(normalized, config);
 
-  return NextResponse.json(result);
+    return NextResponse.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Validation failed unexpectedly.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

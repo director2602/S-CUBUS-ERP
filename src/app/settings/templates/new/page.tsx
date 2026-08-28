@@ -55,8 +55,25 @@ export default function NewTemplatePage() {
   }
 
   async function handleSubmit() {
-    setLoading(true);
     setError(null);
+
+    // Client-side validation: catch the empty-aliases problem before it
+    // ever reaches the server, with a message pointing at the exact row.
+    const emptyRowIndex = fields.findIndex(
+      (f) => f.sourceAliases.split(",").map((a) => a.trim()).filter(Boolean).length === 0
+    );
+    if (emptyRowIndex !== -1) {
+      setError(
+        `Field #${emptyRowIndex + 1} needs at least one column name (e.g. "Roll No, Roll Number"). Remove the row if you don't need it.`
+      );
+      return;
+    }
+    if (fields.length === 0) {
+      setError("Add at least one field before saving.");
+      return;
+    }
+
+    setLoading(true);
     try {
       const payload = {
         name,
@@ -73,8 +90,19 @@ export default function NewTemplatePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
+      let data: { template?: unknown; error?: { message?: string } } = {};
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error(
+          res.status === 401 || res.status === 403
+            ? "Your session may have expired. Please refresh the page and sign in again."
+            : "Something went wrong creating the template. Please try again."
+        );
+      }
+
       if (!res.ok) {
-        const data = await res.json();
         throw new Error(data.error?.message ?? "Failed to create template.");
       }
       router.push("/settings/templates");
@@ -117,8 +145,13 @@ export default function NewTemplatePage() {
         </div>
 
         <div className="space-y-3">
-          {fields.map((f, i) => (
-            <div key={i} className="grid grid-cols-12 gap-2 items-center border border-slate-200 rounded-lg p-3">
+          {fields.map((f, i) => {
+            const isEmpty = f.sourceAliases.split(",").map((a) => a.trim()).filter(Boolean).length === 0;
+            return (
+            <div
+              key={i}
+              className={`grid grid-cols-12 gap-2 items-center border rounded-lg p-3 ${isEmpty ? "border-red-300 bg-red-50/40" : "border-slate-200"}`}
+            >
               <select
                 className="input col-span-3 py-1"
                 value={f.targetField}
@@ -161,8 +194,14 @@ export default function NewTemplatePage() {
               >
                 Remove
               </button>
+              {isEmpty && (
+                <div className="col-span-12 text-xs text-red-600 -mt-1">
+                  Add at least one column name for this field, or remove the row.
+                </div>
+              )}
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <button type="button" className="btn-secondary text-sm" onClick={() => setFields((r) => [...r, blankRow()])}>

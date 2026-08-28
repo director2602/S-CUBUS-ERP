@@ -51,62 +51,82 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const user = await requireRole("ADMIN");
-  const body = createSchema.parse(await req.json());
+  try {
+    const user = await requireRole("ADMIN");
+    const parsed = createSchema.safeParse(await req.json());
 
-  // Versioning: never overwrite a historical template used for published
-  // results — creating with an existing name bumps the version instead.
-  const existingVersions = db
-    .select()
-    .from(resultTemplates)
-    .where(eq(resultTemplates.name, body.name))
-    .all();
-  const nextVersion = existingVersions.length
-    ? Math.max(...existingVersions.map((t) => t.version)) + 1
-    : 1;
-
-  if (existingVersions.length > 0) {
-    // Deactivate previous versions so exactly one active version is used
-    // going forward, while old versions remain intact for historical exams.
-    for (const v of existingVersions) {
-      db.update(resultTemplates).set({ isActive: false }).where(eq(resultTemplates.id, v.id)).run();
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
+      const fieldLabel =
+        first.path[0] === "fields" && typeof first.path[1] === "number"
+          ? `Field #${Number(first.path[1]) + 1}`
+          : String(first.path[0] ?? "");
+      const detail =
+        first.path[first.path.length - 1] === "sourceAliases"
+          ? `${fieldLabel}: add at least one column name (e.g. "Roll No, Roll Number").`
+          : `${fieldLabel}: ${first.message}`;
+      return NextResponse.json({ error: { message: detail } }, { status: 400 });
     }
-  }
 
-  const template = db
-    .insert(resultTemplates)
-    .values({
-      name: body.name,
-      type: body.type,
-      version: nextVersion,
-      isActive: true,
-      clonedFromId: body.cloneFromId ?? null,
-      createdById: user.id,
-    })
-    .returning()
-    .get();
+    const body = parsed.data;
 
-  body.fields.forEach((f, order) => {
-    db.insert(templateFields)
+    // Versioning: never overwrite a historical template used for published
+    // results — creating with an existing name bumps the version instead.
+    const existingVersions = db
+      .select()
+      .from(resultTemplates)
+      .where(eq(resultTemplates.name, body.name))
+      .all();
+    const nextVersion = existingVersions.length
+      ? Math.max(...existingVersions.map((t) => t.version)) + 1
+      : 1;
+
+    if (existingVersions.length > 0) {
+      // Deactivate previous versions so exactly one active version is used
+      // going forward, while old versions remain intact for historical exams.
+      for (const v of existingVersions) {
+        db.update(resultTemplates).set({ isActive: false }).where(eq(resultTemplates.id, v.id)).run();
+      }
+    }
+
+    const template = db
+      .insert(resultTemplates)
       .values({
-        templateId: template.id,
-        targetField: f.targetField,
-        subjectName: f.subjectName ?? null,
-        sourceAliases: JSON.stringify(f.sourceAliases),
-        required: f.required,
-        calculated: f.calculated,
-        order,
+        name: body.name,
+        type: body.type,
+        version: nextVersion,
+        isActive: true,
+        clonedFromId: body.cloneFromId ?? null,
+        createdById: user.id,
       })
-      .run();
-  });
+      .returning()
+      .get();
 
-  await writeAuditLog({
-    userId: user.id,
-    action: "CREATE",
-    entityType: "ResultTemplate",
-    entityId: template.id,
-    newValue: { name: body.name, version: nextVersion, type: body.type },
-  });
+    body.fields.forEach((f, order) => {
+      db.insert(templateFields)
+        .values({
+          templateId: template.id,
+          targetField: f.targetField,
+          subjectName: f.subjectName ?? null,
+          sourceAliases: JSON.stringify(f.sourceAliases),
+          required: f.required,
+          calculated: f.calculated,
+          order,
+        })
+        .run();
+    });
 
-  return NextResponse.json({ template });
+    await writeAuditLog({
+      userId: user.id,
+      action: "CREATE",
+      entityType: "ResultTemplate",
+      entityId: template.id,
+      newValue: { name: body.name, version: nextVersion, type: body.type },
+    });
+
+    return NextResponse.json({ template });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to create template.";
+    return NextResponse.json({ error: { message } }, { status: 500 });
+  }
 }
