@@ -37,6 +37,17 @@ describe("parseWorkbook", () => {
     const parsed = parseWorkbook(buffer);
     expect(parsed.sheets[0].rows).toEqual([]);
   });
+
+  it("parses a plain CSV file the same way as Excel", () => {
+    const csvBuffer = Buffer.from(
+      "Student Name,Roll No,Total\nAarav Sharma,R001,570\nPriya Nair,R002,650\n"
+    );
+    const parsed = parseWorkbook(csvBuffer);
+    expect(parsed.sheets[0].headers).toEqual(["Student Name", "Roll No", "Total"]);
+    expect(parsed.sheets[0].rows).toHaveLength(2);
+    expect(parsed.sheets[0].rows[0]["Student Name"]).toBe("Aarav Sharma");
+    expect(parsed.sheets[0].rows[1]["Roll No"]).toBe("R002");
+  });
 });
 
 describe("fingerprintBuffer", () => {

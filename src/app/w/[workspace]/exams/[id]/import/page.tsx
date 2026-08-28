@@ -214,13 +214,25 @@ export default function ImportWizardPage({ params }: { params: { workspace: stri
 
       {step === 1 && (
         <div className="card p-6 space-y-4">
-          <h2 className="font-medium text-slate-900">Upload Excel / CSV</h2>
-          <input
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="text-sm"
-          />
+          <h2 className="font-medium text-slate-900">Upload Excel or CSV</h2>
+          <p className="text-xs text-slate-500 -mt-2">
+            Accepted formats: Excel (.xlsx, .xls) or CSV (.csv)
+          </p>
+          <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-slate-300 rounded-lg p-8 cursor-pointer hover:border-scubus-blue hover:bg-slate-50 transition-colors">
+            <span className="text-sm text-slate-600">
+              {file ? (
+                <span className="font-medium text-scubus-navy">{file.name}</span>
+              ) : (
+                "Click to choose a .xlsx, .xls, or .csv file"
+              )}
+            </span>
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              className="hidden"
+            />
+          </label>
           {inspectError && <p className="text-sm text-red-600">{inspectError}</p>}
           <div className="flex gap-3">
             <button className="btn-primary" disabled={!file || uploading} onClick={handleUpload}>

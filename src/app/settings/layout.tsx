@@ -24,6 +24,9 @@ export default async function SettingsLayout({ children }: { children: React.Rea
           <Link href="/settings/templates" className="text-white/80 hover:text-white">
             Templates
           </Link>
+          <Link href="/settings/users" className="text-white/80 hover:text-white">
+            Users
+          </Link>
           <Link href="/settings/audit" className="text-white/80 hover:text-white">
             Audit Log
           </Link>

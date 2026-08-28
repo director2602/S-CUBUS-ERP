@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { requireUser } from "@/lib/session";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { SignOutButton } from "@/components/SignOutButton";
@@ -24,10 +25,31 @@ export default async function WorkspaceLayout({
       <header className="bg-scubus-navy text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center gap-6 h-16">
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="h-8 w-8 rounded-lg bg-white text-scubus-navy flex items-center justify-center font-bold text-sm">
-              S³
+            <div className="h-9 w-9 rounded-lg bg-white flex items-center justify-center overflow-hidden p-1">
+              <Image
+                src="/branding/scubus-master-logo.png"
+                alt="S-CUBUS"
+                width={36}
+                height={36}
+                className="object-contain"
+                priority
+              />
             </div>
             <span className="font-semibold hidden sm:inline">S-CUBUS ERP</span>
+            {params.workspace === "sathii" && (
+              <>
+                <span className="text-white/30 hidden sm:inline">+</span>
+                <div className="h-8 w-8 rounded-md bg-white flex items-center justify-center overflow-hidden p-0.5 hidden sm:flex">
+                  <Image
+                    src="/branding/sathii-logo.png"
+                    alt="SATHII"
+                    width={32}
+                    height={32}
+                    className="object-contain"
+                  />
+                </div>
+              </>
+            )}
           </Link>
 
           <nav className="flex items-center gap-1 bg-white/10 rounded-lg p-1">

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,8 +30,15 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-scubus-navy to-scubus-blue px-4">
       <div className="w-full max-w-sm card p-8">
         <div className="text-center mb-6">
-          <div className="mx-auto h-12 w-12 rounded-xl bg-scubus-navy text-white flex items-center justify-center font-bold text-lg">
-            S³
+          <div className="mx-auto h-16 w-16 rounded-xl bg-white border border-slate-200 flex items-center justify-center overflow-hidden p-1.5">
+            <Image
+              src="/branding/scubus-master-logo.png"
+              alt="S-CUBUS"
+              width={56}
+              height={56}
+              className="object-contain"
+              priority
+            />
           </div>
           <h1 className="mt-3 text-lg font-semibold text-slate-900">S-CUBUS ERP</h1>
           <p className="text-sm text-slate-500">Examination Result & Analytics System</p>

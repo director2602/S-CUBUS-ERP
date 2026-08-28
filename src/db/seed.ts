@@ -47,10 +47,17 @@ async function main() {
   if (db.select().from(brandingProfiles).all().length === 0) {
     db.insert(brandingProfiles).values({
       name: "S-CUBUS Default",
-      primaryLogoUrl: "/branding/scubus-primary.svg",
+      primaryLogoUrl: "/branding/scubus-master-logo.png",
       isDefault: true,
     }).run();
-    console.log("Seeded default branding profile.");
+    db.insert(brandingProfiles).values({
+      name: "SATHII",
+      workspace: "SATHII",
+      primaryLogoUrl: "/branding/scubus-master-logo.png",
+      secondaryLogoUrl: "/branding/sathii-logo.png",
+      isDefault: true,
+    }).run();
+    console.log("Seeded default branding profiles (S-CUBUS master + SATHII secondary).");
   }
 
   // --- A ready-to-use RESULT template ------------------------------------

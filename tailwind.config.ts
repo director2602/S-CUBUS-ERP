@@ -5,8 +5,8 @@ const config: Config = {
     extend: {
       colors: {
         scubus: {
-          navy: "#0b2545",
-          blue: "#134074",
+          navy: "#400C4D",
+          blue: "#75507E",
           accent: "#ff8c00",
         },
       },

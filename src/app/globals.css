@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --scubus-navy: #0b2545;
-  --scubus-blue: #134074;
+  --scubus-navy: #400C4D;
+  --scubus-blue: #75507E;
 }
 
 body {
