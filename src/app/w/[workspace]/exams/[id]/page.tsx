@@ -162,7 +162,16 @@ export default async function ExamDetailPage({
         </div>
       )}
 
-      {params.workspace === "sathii" && results.length > 0 && (
+      {exam.workspace !== params.workspace.toUpperCase() && (
+        <div className="card p-4 bg-amber-50 border-amber-200 text-sm text-amber-800">
+          ⚠ This examination belongs to the <b>{exam.workspace}</b> workspace, but you're viewing it via a{" "}
+          <b>{params.workspace.toUpperCase()}</b> link. Some workspace-specific features (like Scholarship,
+          which only applies to SATHII) may not show here as a result. Open it from the correct workspace's
+          Examinations list instead.
+        </div>
+      )}
+
+      {exam.workspace === "SATHII" && results.length > 0 && (
         <CalculateScholarshipsButton examinationId={exam.id} />
       )}
 

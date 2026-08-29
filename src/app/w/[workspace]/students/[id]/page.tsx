@@ -142,8 +142,12 @@ export default async function Student360Page({
   });
 
   // --- Scholarship (SATHII workspace only) --------------------------------
+  // `current` is already guaranteed to belong to this workspace (see the
+  // `.filter` on `detailed` above), but checking the exam's own workspace
+  // field directly here — rather than the URL segment — keeps this correct
+  // even if that upstream filtering logic ever changes.
   const scholarship =
-    params.workspace === "sathii" && current
+    current?.exam?.workspace === "SATHII"
       ? db.select().from(scholarshipResults).where(eq(scholarshipResults.resultRecordId, current.result.id)).get()
       : null;
   const scholarshipPolicy = scholarship
@@ -350,7 +354,7 @@ export default async function Student360Page({
                 ? "Baseline — insufficient historical data."
                 : "Momentum scoring (growth, rank movement, consistency) is planned for Phase 6–7 and intentionally not fabricated here yet."}
             </div>
-            {params.workspace === "sathii" && (
+            {current.exam?.workspace === "SATHII" && (
               <div className="card p-6">
                 <h2 className="font-medium text-slate-900 mb-3">Scholarship</h2>
                 {!scholarship ? (
