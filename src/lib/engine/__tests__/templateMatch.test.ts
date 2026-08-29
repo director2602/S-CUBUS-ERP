@@ -32,6 +32,32 @@ describe("suggestColumnMapping", () => {
     const result = suggestColumnMapping(["PHY"], fields);
     expect(result[0].matchedField?.subjectName).toBe("Physics");
   });
+
+  it("does not falsely match 'Centre Code' to the exam paper-code field (real-world false positive)", () => {
+    const codeFields: TemplateFieldDef[] = [
+      { targetField: "CODE", sourceAliases: ["Set Code", "Paper Code", "Test Code", "Exam Code"], required: false },
+    ];
+    const result = suggestColumnMapping(["Centre Code"], codeFields);
+    // Centre Code is metadata about the physical centre, not an exam
+    // paper/set code — it must not be auto-selected as CODE.
+    expect(result[0].matchedField).toBeNull();
+  });
+
+  it("does not falsely match 'Centre Rank' to any field", () => {
+    const rankFields: TemplateFieldDef[] = [
+      { targetField: "RANK", sourceAliases: ["Student Rank", "Overall Rank"], required: false },
+    ];
+    const result = suggestColumnMapping(["Centre Rank"], rankFields);
+    expect(result[0].matchedField).toBeNull();
+  });
+
+  it("still matches a genuinely specific paper-code column", () => {
+    const codeFields: TemplateFieldDef[] = [
+      { targetField: "CODE", sourceAliases: ["Set Code", "Paper Code", "Test Code"], required: false },
+    ];
+    const result = suggestColumnMapping(["Test Code"], codeFields);
+    expect(result[0].matchedField?.targetField).toBe("CODE");
+  });
 });
 
 describe("detectExamNameFromCells", () => {

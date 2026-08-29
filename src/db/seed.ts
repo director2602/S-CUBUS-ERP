@@ -82,7 +82,7 @@ async function main() {
       { targetField: "ROLL_NUMBER", sourceAliases: ["Roll No", "Roll Number", "RollNo"], required: true },
       { targetField: "CLASS", sourceAliases: ["Class", "Std"], required: false },
       { targetField: "BATCH", sourceAliases: ["Batch"], required: false },
-      { targetField: "CODE", sourceAliases: ["Code", "Set Code"], required: false },
+      { targetField: "CODE", sourceAliases: ["Set Code", "Paper Code", "Test Code", "Exam Code", "Booklet Code"], required: false },
       { targetField: "SUBJECT_MARKS", subjectName: "Physics", sourceAliases: ["Physics", "PHY"], required: false },
       { targetField: "SUBJECT_MARKS", subjectName: "Chemistry", sourceAliases: ["Chemistry", "CHE"], required: false },
       { targetField: "SUBJECT_MARKS", subjectName: "Biology", sourceAliases: ["Biology", "BIO"], required: false },

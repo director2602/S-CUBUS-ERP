@@ -20,10 +20,10 @@ export const BUILT_IN_ALIAS_SUGGESTIONS: SuggestedAlias[] = [
   { targetField: "ROLL_NUMBER", defaultAliases: ["roll no", "roll number", "rollno", "roll_no"] },
   { targetField: "CLASS", defaultAliases: ["class", "std", "standard"] },
   { targetField: "BATCH", defaultAliases: ["batch", "section"] },
-  { targetField: "CODE", defaultAliases: ["code", "set code", "paper code", "test code"] },
+  { targetField: "CODE", defaultAliases: ["set code", "paper code", "test code", "exam code", "booklet code"] },
   { targetField: "TOTAL_MARKS", defaultAliases: ["total", "total marks", "total score", "marks"] },
   { targetField: "PERCENTAGE", defaultAliases: ["percentage", "%", "percent"] },
-  { targetField: "RANK", defaultAliases: ["rank"] },
+  { targetField: "RANK", defaultAliases: ["student rank", "overall rank"] },
   { targetField: "PERCENTILE", defaultAliases: ["percentile", "%ile"] },
 ];
 
