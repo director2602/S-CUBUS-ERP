@@ -77,23 +77,38 @@ export function validateImportRows(
   rows: NormalizedImportRow[],
   config: ExamConfigForValidation
 ): ValidationResult {
-  const knownSubjectNames = new Set(config.subjects.map((s) => s.name));
+  // Case/whitespace-insensitive: "physics" typed while configuring the
+  // exam should still match a "Physics" column from the file — the
+  // original casing from config.subjects is used for max-marks lookup.
+  const normalizeSubjectKey = (s: string) => s.trim().toLowerCase();
+  const subjectsByNormalizedName = new Map(config.subjects.map((s) => [normalizeSubjectKey(s.name), s]));
   const maxTotal = config.subjects.reduce((acc, s) => acc + s.maxMarks, 0);
 
   const seenRollNumbers = new Map<string, number>(); // rollNumber -> first row seen
   const seenScids = new Map<string, number>();
   const seenSathiiKeys = new Map<string, number>();
 
-  const validatedRows: ValidatedRow[] = rows.map((row) => {
+  const validatedRows: ValidatedRow[] = rows.map((rawRow) => {
     const errors: RowError[] = [];
 
     // --- Identity checks -----------------------------------------------
+    // Roll number identifies the exam *session*. Many internal/centre
+    // tests never issue a separate roll number and just use the
+    // student's permanent SCID or SATHII KEY instead — fall back to
+    // whichever is present rather than hard-failing every row.
+    const explicitRoll = rawRow.rollNumber ? String(rawRow.rollNumber).trim() : "";
+    const fallbackId = (rawRow.scid || rawRow.sathiiKey || "")?.toString().trim() ?? "";
+    const row: NormalizedImportRow = {
+      ...rawRow,
+      rollNumber: explicitRoll || fallbackId || rawRow.rollNumber,
+    };
+
     if (!row.rollNumber || String(row.rollNumber).trim() === "") {
       errors.push({
         rowNumber: row.rowNumber,
         field: "rollNumber",
         errorType: "MISSING_ROLL_NUMBER",
-        message: "Roll number is required to identify the exam session for this student.",
+        message: "No roll number, SCID, or SATHII KEY was found to identify this student for the exam session.",
       });
     } else {
       const key = String(row.rollNumber).trim();
@@ -199,7 +214,8 @@ export function validateImportRows(
     // --- Marks checks -----------------------------------------------------
     const cleanSubjectMarks: number[] = [];
     for (const [subjectName, marks] of Object.entries(row.subjectMarks)) {
-      if (!knownSubjectNames.has(subjectName)) {
+      const subjectDef = subjectsByNormalizedName.get(normalizeSubjectKey(subjectName));
+      if (!subjectDef) {
         errors.push({
           rowNumber: row.rowNumber,
           field: subjectName,
@@ -217,8 +233,7 @@ export function validateImportRows(
         });
         continue;
       }
-      const subjectDef = config.subjects.find((s) => s.name === subjectName);
-      const subjectMax = subjectDef?.maxMarks ?? Infinity;
+      const subjectMax = subjectDef.maxMarks;
       // Allow marks to go slightly below zero only when negative marking
       // is enabled (a subject's worst case is all-wrong).
       const subjectMin = config.scheme.negativeMarking ? -subjectMax : 0;

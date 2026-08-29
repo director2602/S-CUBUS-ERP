@@ -184,7 +184,7 @@ export async function commitImport(params: {
     .get();
 
   const examSubjects = db.select().from(subjects).where(eq(subjects.examinationId, params.examinationId)).all();
-  const subjectByName = new Map(examSubjects.map((s) => [s.name, s]));
+  const subjectByName = new Map(examSubjects.map((s) => [s.name.trim().toLowerCase(), s]));
   const codes = db.select().from(examCodes).where(eq(examCodes.examinationId, params.examinationId)).all();
   const codeByValue = new Map(codes.map((c) => [c.code, c]));
   const exam = db.select().from(examinations).where(eq(examinations.id, params.examinationId)).get()!;
@@ -310,7 +310,7 @@ export async function commitImport(params: {
       }
 
       for (const [subjectName, marks] of Object.entries(row.subjectMarks)) {
-        const subjectRow = subjectByName.get(subjectName);
+        const subjectRow = subjectByName.get(subjectName.trim().toLowerCase());
         if (!subjectRow || marks === null) continue;
         db.insert(subjectResults)
           .values({ resultRecordId, subjectId: subjectRow.id, marksObtained: marks })

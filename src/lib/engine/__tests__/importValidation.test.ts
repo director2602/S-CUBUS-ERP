@@ -41,9 +41,62 @@ describe("validateImportRows", () => {
     expect(result.validatedRows[0].calculatedTotal).toBe(570);
   });
 
-  it("flags a missing roll number", () => {
-    const result = validateImportRows([row({ rollNumber: "" })], config);
+  it("flags a missing roll number when no SCID or SATHII KEY exist either", () => {
+    const result = validateImportRows([row({ rollNumber: "", scid: null })], config);
     expect(result.allErrors.some((e) => e.errorType === "MISSING_ROLL_NUMBER")).toBe(true);
+  });
+
+  it("falls back to SCID as the effective roll number when no roll number column exists (real-world files often only have SCID)", () => {
+    const result = validateImportRows([row({ rollNumber: "", scid: "SC2600000024" })], config);
+    expect(result.rowsWithErrors).toBe(0);
+    expect(result.validatedRows[0].rollNumber).toBe("SC2600000024");
+  });
+
+  it("matches subject names case-insensitively (exam configured as 'physics', file column mapped as 'Physics')", () => {
+    const caseInsensitiveConfig = {
+      ...config,
+      subjects: [
+        { name: "physics", maxMarks: 180 },
+        { name: "chemistry", maxMarks: 180 },
+        { name: "biology", maxMarks: 360 },
+      ],
+    };
+    const result = validateImportRows([row({})], caseInsensitiveConfig);
+    expect(result.allErrors.some((e) => e.errorType === "UNKNOWN_SUBJECT")).toBe(false);
+    expect(result.validatedRows[0].calculatedTotal).toBe(570);
+  });
+
+  it("reproduces the real TE-03 NEET file shape end to end: SCID-only identity, no roll number column", () => {
+    const realWorldConfig = {
+      scheme: {
+        correctMarks: 4,
+        wrongMarks: -1,
+        unattemptedMarks: 0,
+        negativeMarking: true,
+        decimalPrecision: 2,
+      },
+      subjects: [
+        { name: "Physics", maxMarks: 180 },
+        { name: "Chemistry", maxMarks: 180 },
+        { name: "Biology", maxMarks: 360 },
+      ],
+      knownClassNames: [],
+      knownCodes: [],
+      requireScid: false,
+      requireSathiiKey: false,
+    };
+    const realRow = row({
+      rollNumber: null,
+      scid: "SC2600000024",
+      className: null,
+      examCode: null,
+      subjectMarks: { Physics: 167, Chemistry: 165, Biology: 340 },
+      uploadedTotal: 672,
+    });
+    const result = validateImportRows([realRow], realWorldConfig);
+    expect(result.cleanRows).toBe(1);
+    expect(result.validatedRows[0].calculatedTotal).toBe(672);
+    expect(result.validatedRows[0].rollNumber).toBe("SC2600000024");
   });
 
   it("flags duplicate roll numbers across rows", () => {
@@ -121,7 +174,7 @@ describe("validateImportRows", () => {
   it("summarizes clean vs error row counts correctly", () => {
     const rows = [
       row({ rowNumber: 2, rollNumber: "R001", scid: "SC001" }),
-      row({ rowNumber: 3, rollNumber: "", scid: "SC002" }),
+      row({ rowNumber: 3, rollNumber: "", scid: null }), // no roll number AND no scid = still an error
     ];
     const result = validateImportRows(rows, config);
     expect(result.cleanRows).toBe(1);

@@ -60,6 +60,7 @@ export default function ImportWizardPage({ params }: { params: { workspace: stri
   const [sheetName, setSheetName] = useState<string | null>(null);
   const [detectedExamName, setDetectedExamName] = useState<string | null>(null);
   const [isDuplicateUpload, setIsDuplicateUpload] = useState(false);
+  const [usedOcr, setUsedOcr] = useState(false);
 
   const [validation, setValidation] = useState<ValidationResult | null>(null);
   const [validating, setValidating] = useState(false);
@@ -110,6 +111,7 @@ export default function ImportWizardPage({ params }: { params: { workspace: stri
     setSheetName(data.chosenSheet);
     setDetectedExamName(data.detectedExamName);
     setIsDuplicateUpload(data.isDuplicateUpload);
+    setUsedOcr(Boolean(data.usedOcr));
 
     const initialMapping: Mapping = {};
     for (const s of data.suggestions as Suggestion[]) {
@@ -214,25 +216,29 @@ export default function ImportWizardPage({ params }: { params: { workspace: stri
 
       {step === 1 && (
         <div className="card p-6 space-y-4">
-          <h2 className="font-medium text-slate-900">Upload Excel or CSV</h2>
+          <h2 className="font-medium text-slate-900">Upload Excel, CSV, or a Photo</h2>
           <p className="text-xs text-slate-500 -mt-2">
-            Accepted formats: Excel (.xlsx, .xls) or CSV (.csv)
+            Accepted: Excel (.xlsx, .xls), CSV (.csv), or a photo/scan (.jpg, .png) read via OCR
           </p>
           <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-slate-300 rounded-lg p-8 cursor-pointer hover:border-scubus-blue hover:bg-slate-50 transition-colors">
             <span className="text-sm text-slate-600">
               {file ? (
                 <span className="font-medium text-scubus-navy">{file.name}</span>
               ) : (
-                "Click to choose a .xlsx, .xls, or .csv file"
+                "Click to choose a file, or a photo of a printed result sheet"
               )}
             </span>
             <input
               type="file"
-              accept=".xlsx,.xls,.csv,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              accept=".xlsx,.xls,.csv,.jpg,.jpeg,.png,text/csv,image/*,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               className="hidden"
             />
           </label>
+          <div className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-500">
+            📷 Photos are read with OCR — best results with a clear, well-lit photo of a <b>typed</b>{" "}
+            (not handwritten) sheet, shot straight-on. Always double-check OCR results on the Validate step.
+          </div>
           {inspectError && <p className="text-sm text-red-600">{inspectError}</p>}
           <div className="flex gap-3">
             <button className="btn-primary" disabled={!file || uploading} onClick={handleUpload}>
@@ -248,6 +254,12 @@ export default function ImportWizardPage({ params }: { params: { workspace: stri
       {step === 2 && (
         <div className="card p-6 space-y-4">
           <h2 className="font-medium text-slate-900">Map Columns</h2>
+          {usedOcr && (
+            <p className="text-sm bg-amber-50 text-amber-800 border border-amber-200 rounded-lg px-3 py-2">
+              📷 This came from a photo via OCR — column splits and values can be misread, especially
+              numbers. Check every row carefully on the next step before importing.
+            </p>
+          )}
           {detectedExamName && (
             <p className="text-xs text-slate-500">Detected likely exam reference in file: “{detectedExamName}”</p>
           )}

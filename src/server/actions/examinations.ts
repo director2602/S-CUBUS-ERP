@@ -9,7 +9,7 @@ import {
   brandingProfiles,
   resultTemplates,
 } from "@/db/schema";
-import { requireRole, requireUser } from "@/lib/session";
+import { requireRoleAction, requireRole, requireUser } from "@/lib/session";
 import { writeAuditLog } from "@/server/audit";
 import { revalidatePath } from "next/cache";
 import { eq, and } from "drizzle-orm";
@@ -73,7 +73,7 @@ export interface CreateExaminationResult {
  */
 export async function createExamination(formData: FormData): Promise<CreateExaminationResult> {
   try {
-    const user = await requireRole("RESULT_OPERATOR");
+    const user = await requireRoleAction("RESULT_OPERATOR");
 
     const name = z.string().min(2, "Examination name is required.").parse(formData.get("name"));
     const shortName = (formData.get("shortName") as string) || null;

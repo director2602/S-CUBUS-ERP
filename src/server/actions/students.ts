@@ -2,7 +2,7 @@
 
 import { db } from "@/db/client";
 import { students, studentIdentifiers, centres } from "@/db/schema";
-import { requireRole, requireUser } from "@/lib/session";
+import { requireRoleAction, requireUser } from "@/lib/session";
 import { writeAuditLog } from "@/server/audit";
 import { revalidatePath } from "next/cache";
 import { eq, or, like } from "drizzle-orm";
@@ -16,7 +16,7 @@ export interface CreateStudentResult {
 
 export async function createStudent(formData: FormData): Promise<CreateStudentResult> {
   try {
-    const user = await requireRole("RESULT_OPERATOR");
+    const user = await requireRoleAction("RESULT_OPERATOR");
 
     const name = z.string().min(2, "Name is required").parse(formData.get("name"));
     const centreId = (formData.get("centreId") as string) || null;

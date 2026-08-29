@@ -19,9 +19,14 @@ export default async function StudentsPage({ params }: { params: { workspace: st
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-slate-900">Students</h1>
-        <Link href={`/w/${params.workspace}/students/new`} className="btn-primary">
-          + Add Student
-        </Link>
+        <div className="flex gap-2">
+          <Link href={`/w/${params.workspace}/students/import`} className="btn-secondary">
+            Bulk Upload
+          </Link>
+          <Link href={`/w/${params.workspace}/students/new`} className="btn-primary">
+            + Add Student
+          </Link>
+        </div>
       </div>
 
       <div className="card overflow-hidden">
