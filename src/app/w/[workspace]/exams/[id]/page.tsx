@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { db } from "@/db/client";
+import { db, sqlite } from "@/db/client";
 import {
   examinations,
   subjects,
@@ -13,6 +13,7 @@ import { eq } from "drizzle-orm";
 import { requireUser } from "@/lib/session";
 import { computeCohortStats } from "@/lib/engine/calculation";
 import { StatusControls } from "@/components/StatusControls";
+import { ScoreDistributionChart, SubjectAverageChart } from "@/components/ExamCharts";
 
 export default async function ExamDetailPage({
   params,
@@ -38,6 +39,28 @@ export default async function ExamDetailPage({
   );
 
   const maxTotal = examSubjects.reduce((a, s) => a + s.maxMarks, 0);
+
+  // --- Chart data: score distribution + subject-wise averages ------------
+  const distributionBuckets = Array.from({ length: 10 }, (_, i) => ({
+    range: `${i * 10}-${i * 10 + 10}%`,
+    count: 0,
+  }));
+  for (const r of results) {
+    const idx = Math.min(9, Math.max(0, Math.floor(r.percentageCalculated / 10)));
+    distributionBuckets[idx].count += 1;
+  }
+
+  const subjectAverageRows = sqlite
+    .prepare(
+      `SELECT sub.name as name, sub.max_marks as maxMarks, AVG(sr.marks_obtained) as avgMarks
+       FROM subject_results sr
+       JOIN subjects sub ON sub.id = sr.subject_id
+       JOIN result_records rr ON rr.id = sr.result_record_id
+       WHERE rr.examination_id = ?
+       GROUP BY sub.id
+       ORDER BY sub.name`
+    )
+    .all(exam.id) as { name: string; maxMarks: number; avgMarks: number }[];
 
   return (
     <div className="space-y-8">
@@ -114,6 +137,21 @@ export default async function ExamDetailPage({
             <Metric label="Std Dev" value={stats.stdDev} />
             <Metric label="Min" value={stats.min} />
             <Metric label="Topper" value={stats.topper} tone="green" />
+          </div>
+        </div>
+      )}
+
+      {stats && (
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="card p-6">
+            <h2 className="font-medium text-slate-900 mb-1">Score Distribution</h2>
+            <p className="text-xs text-slate-400 mb-2">Number of students in each percentage band</p>
+            <ScoreDistributionChart data={distributionBuckets} />
+          </div>
+          <div className="card p-6">
+            <h2 className="font-medium text-slate-900 mb-1">Subject-wise Average</h2>
+            <p className="text-xs text-slate-400 mb-2">Average marks scored per subject, as % of max</p>
+            <SubjectAverageChart data={subjectAverageRows} />
           </div>
         </div>
       )}

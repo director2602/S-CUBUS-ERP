@@ -17,6 +17,7 @@ import {
 import { eq } from "drizzle-orm";
 import { requireUser } from "@/lib/session";
 import { computeCohortStats } from "@/lib/engine/calculation";
+import { PerformanceTrendChart, SubjectTrendChart } from "@/components/StudentTrendCharts";
 
 export default async function Student360Page({
   params,
@@ -115,6 +116,28 @@ export default async function Student360Page({
 
   const scid = identifiers.find((i) => i.type === "SCID")?.value;
   const sathiiKey = identifiers.find((i) => i.type === "SATHII_KEY")?.value;
+
+  // --- Trend chart data: every exam this student has a result for, in order ---
+  const performanceTrend = detailed.map((d) => ({
+    examLabel: d.exam!.shortName || d.exam!.name,
+    percentage: d.result.percentageCalculated,
+    percentile: d.result.percentile,
+    rank: d.result.rank,
+    total: d.result.totalMarksCalculated,
+  }));
+
+  const allSubjectNames = Array.from(
+    new Set(detailed.flatMap((d) => d.subjectBreakdown.map((s) => s.name)))
+  );
+  const subjectTrend = detailed.map((d) => {
+    const row: { examLabel: string; [subjectName: string]: string | number } = {
+      examLabel: d.exam!.shortName || d.exam!.name,
+    };
+    for (const s of d.subjectBreakdown) {
+      row[s.name] = s.maxMarks > 0 ? Math.round((s.marks / s.maxMarks) * 1000) / 10 : 0;
+    }
+    return row;
+  });
 
   return (
     <div className="space-y-8">
@@ -241,36 +264,59 @@ export default async function Student360Page({
 
           {/* Cumulative performance / historical trend */}
           <section className="card p-6">
-            <h2 className="font-medium text-slate-900 mb-4">Cumulative Performance</h2>
-            {detailed.length < 2 ? (
-              <p className="text-sm text-slate-400">
-                Historical trend unavailable — only {detailed.length} result is available.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {detailed.map((d) => {
-                  const maxTotal = d.subjectBreakdown.reduce((a, s) => a + s.maxMarks, 0) || 1;
-                  const pct = (d.result.totalMarksCalculated / maxTotal) * 100;
-                  return (
-                    <div key={d.result.id} className="flex items-center gap-3 text-xs">
-                      <span className="w-40 truncate text-slate-600">{d.exam!.name}</span>
-                      <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-scubus-blue rounded-full"
-                          style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
-                        />
-                      </div>
-                      <span className="w-16 text-right text-slate-500">
-                        {d.result.totalMarksCalculated}
-                      </span>
-                      <span className="w-14 text-right text-slate-400">
-                        Rank {d.result.rank ?? "—"}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            <h2 className="font-medium text-slate-900 mb-1">Performance Trend</h2>
+            <p className="text-xs text-slate-400 mb-2">Percentage &amp; percentile across every exam on record</p>
+            <PerformanceTrendChart data={performanceTrend} />
+          </section>
+
+          {allSubjectNames.length > 0 && (
+            <section className="card p-6">
+              <h2 className="font-medium text-slate-900 mb-1">Subject Journey</h2>
+              <p className="text-xs text-slate-400 mb-2">Each subject as % of its max marks, across every exam</p>
+              <SubjectTrendChart data={subjectTrend} subjectNames={allSubjectNames} />
+            </section>
+          )}
+
+          {/* Full exam history table */}
+          <section className="card overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <h2 className="font-medium text-slate-900">Exam History ({detailed.length})</h2>
+            </div>
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 text-left text-xs text-slate-500 uppercase tracking-wide">
+                <tr>
+                  <th className="px-4 py-2">Examination</th>
+                  <th className="px-4 py-2">Total</th>
+                  <th className="px-4 py-2">%</th>
+                  <th className="px-4 py-2">Rank</th>
+                  <th className="px-4 py-2">Percentile</th>
+                  <th className="px-4 py-2">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {[...detailed].reverse().map((d) => (
+                  <tr key={d.result.id} className={d.result.id === current.result.id ? "bg-scubus-blue/5" : ""}>
+                    <td className="px-4 py-2 font-medium text-slate-800">
+                      {d.exam!.name}
+                      {d.result.id === current.result.id && (
+                        <span className="badge badge-blue ml-2 text-[10px]">Latest</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2">{d.result.totalMarksCalculated}</td>
+                    <td className="px-4 py-2">{d.result.percentageCalculated}%</td>
+                    <td className="px-4 py-2">{d.result.rank ?? "—"}</td>
+                    <td className="px-4 py-2">{d.result.percentile ?? "—"}</td>
+                    <td className="px-4 py-2">
+                      {d.result.mismatchFlag ? (
+                        <span className="badge badge-red">Mismatch</span>
+                      ) : (
+                        <span className="badge badge-green">{d.result.status}</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </section>
 
           {/* Leading/lagging & scholarship placeholders (never fabricated) */}
