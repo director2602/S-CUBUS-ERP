@@ -162,9 +162,21 @@ export default async function Student360Page({
             {centre && <span className="badge badge-slate">Centre: {centre.name}</span>}
           </div>
         </div>
-        <Link href={`/w/${params.workspace}/students`} className="btn-secondary text-sm">
-          ← Back to list
-        </Link>
+        <div className="flex gap-2">
+          {current && (
+            <a
+              href={`/api/reports/student/${current.result.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-primary text-sm"
+            >
+              Download PDF Report
+            </a>
+          )}
+          <Link href={`/w/${params.workspace}/students`} className="btn-secondary text-sm">
+            ← Back to list
+          </Link>
+        </div>
       </div>
 
       {detailed.length === 0 && (

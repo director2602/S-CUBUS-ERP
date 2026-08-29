@@ -81,9 +81,14 @@ export default async function ExamDetailPage({
           </div>
         </div>
         <div className="flex flex-col items-end gap-3">
-          <Link href={`/w/${params.workspace}/exams/${exam.id}/import`} className="btn-primary">
-            Import Results
-          </Link>
+          <div className="flex gap-2">
+            <Link href={`/w/${params.workspace}/exams/${exam.id}/questions`} className="btn-secondary">
+              Question Analysis
+            </Link>
+            <Link href={`/w/${params.workspace}/exams/${exam.id}/import`} className="btn-primary">
+              Import Results
+            </Link>
+          </div>
           <StatusControls examId={exam.id} status={exam.status} hasMismatches={mismatches.length > 0} />
         </div>
       </div>

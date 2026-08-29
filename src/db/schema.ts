@@ -320,6 +320,36 @@ export const brandingProfiles = sqliteTable("branding_profiles", {
 });
 
 // ---------------------------------------------------------------------------
+// QUESTION-LEVEL ANALYSIS — question paper, answer key, and student responses
+// ---------------------------------------------------------------------------
+
+export const questions = sqliteTable("questions", {
+  id: id(),
+  examinationId: text("examination_id").notNull().references(() => examinations.id),
+  questionNumber: text("question_number").notNull(),
+  subjectId: text("subject_id").references(() => subjects.id),
+  chapter: text("chapter"),
+  topic: text("topic"),
+  correctOption: text("correct_option").notNull(),
+  ...timestamps,
+}, (t) => ({
+  uniq: uniqueIndex("questions_exam_qnum_idx").on(t.examinationId, t.questionNumber),
+}));
+
+export const studentResponses = sqliteTable("student_responses", {
+  id: id(),
+  resultRecordId: text("result_record_id").notNull().references(() => resultRecords.id),
+  questionId: text("question_id").notNull().references(() => questions.id),
+  selectedOption: text("selected_option"), // null = unattempted
+  isCorrect: integer("is_correct", { mode: "boolean" }), // null = unattempted
+  marksAwarded: real("marks_awarded").notNull().default(0),
+  ...timestamps,
+}, (t) => ({
+  uniq: uniqueIndex("student_responses_result_question_idx").on(t.resultRecordId, t.questionId),
+  questionIdx: index("student_responses_question_idx").on(t.questionId),
+}));
+
+// ---------------------------------------------------------------------------
 // SCHOLARSHIP ENGINE (SATHII) — versioned, auditable, explainable
 // ---------------------------------------------------------------------------
 
