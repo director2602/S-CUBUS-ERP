@@ -14,6 +14,7 @@ import { requireUser } from "@/lib/session";
 import { computeCohortStats } from "@/lib/engine/calculation";
 import { StatusControls } from "@/components/StatusControls";
 import { ScoreDistributionChart, SubjectAverageChart } from "@/components/ExamCharts";
+import { CalculateScholarshipsButton } from "@/components/CalculateScholarshipsButton";
 
 export default async function ExamDetailPage({
   params,
@@ -154,6 +155,10 @@ export default async function ExamDetailPage({
             <SubjectAverageChart data={subjectAverageRows} />
           </div>
         </div>
+      )}
+
+      {params.workspace === "sathii" && results.length > 0 && (
+        <CalculateScholarshipsButton examinationId={exam.id} />
       )}
 
       <div className="card overflow-hidden">

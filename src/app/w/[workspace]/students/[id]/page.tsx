@@ -13,6 +13,8 @@ import {
   classes,
   batches,
   examCodes,
+  scholarshipResults,
+  scholarshipPolicies,
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireUser } from "@/lib/session";
@@ -138,6 +140,15 @@ export default async function Student360Page({
     }
     return row;
   });
+
+  // --- Scholarship (SATHII workspace only) --------------------------------
+  const scholarship =
+    params.workspace === "sathii" && current
+      ? db.select().from(scholarshipResults).where(eq(scholarshipResults.resultRecordId, current.result.id)).get()
+      : null;
+  const scholarshipPolicy = scholarship
+    ? db.select().from(scholarshipPolicies).where(eq(scholarshipPolicies.id, scholarship.policyId)).get()
+    : null;
 
   return (
     <div className="space-y-8">
@@ -328,10 +339,49 @@ export default async function Student360Page({
                 : "Momentum scoring (growth, rank movement, consistency) is planned for Phase 6–7 and intentionally not fabricated here yet."}
             </div>
             {params.workspace === "sathii" && (
-              <div className="card p-6 text-sm text-slate-500">
-                <h2 className="font-medium text-slate-900 mb-2">Scholarship</h2>
-                Scholarship eligibility and distribution require S-CUBUS to approve the scholarship rule
-                policy (spec §23) — the rule engine is scaffolded but no formula is hard-coded yet.
+              <div className="card p-6">
+                <h2 className="font-medium text-slate-900 mb-3">Scholarship</h2>
+                {!scholarship ? (
+                  <p className="text-sm text-slate-500">
+                    Not calculated yet — run "Calculate Scholarships" on this examination's page to generate
+                    it.
+                  </p>
+                ) : scholarship.eligibilityStatus === "NOT_ELIGIBLE" ? (
+                  <>
+                    <span className="badge badge-slate mb-3 inline-block">NOT ELIGIBLE</span>
+                    <p className="text-sm text-slate-600">{scholarship.ineligibilityReason}</p>
+                  </>
+                ) : scholarship.eligibilityStatus === "INCOMPLETE" ? (
+                  <>
+                    <span className="badge badge-yellow mb-3 inline-block">INCOMPLETE</span>
+                    <p className="text-sm text-slate-600">{scholarship.ineligibilityReason}</p>
+                  </>
+                ) : (
+                  <>
+                    <span
+                      className={`badge mb-3 inline-block ${
+                        scholarship.scholarshipCategory === "TOP_3_CLASS_MERIT" ? "badge-green" : "badge-blue"
+                      }`}
+                    >
+                      {scholarship.scholarshipCategory.replace(/_/g, " ")}
+                    </span>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <Metric label="Scholarship" value={`${scholarship.scholarshipPercentage}%`} tone="green" />
+                      <Metric label="Tuition Fee" value={`₹${scholarship.tuitionFee.toLocaleString("en-IN")}`} />
+                      <Metric label="Scholarship Amount" value={`₹${scholarship.scholarshipAmount.toLocaleString("en-IN")}`} />
+                      <Metric label="Payable" value={`₹${scholarship.netTuitionFee.toLocaleString("en-IN")}`} tone="blue" />
+                    </div>
+                    <div className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                      <b>Why this scholarship?</b> {scholarship.explanation}
+                      {scholarship.sesScore !== null && <> (SES score: {scholarship.sesScore.toFixed(2)})</>}
+                    </div>
+                    {scholarshipPolicy && (
+                      <p className="text-[11px] text-slate-400 mt-2">
+                        Policy: {scholarshipPolicy.name} v{scholarshipPolicy.version}
+                      </p>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </section>

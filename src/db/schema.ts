@@ -320,6 +320,87 @@ export const brandingProfiles = sqliteTable("branding_profiles", {
 });
 
 // ---------------------------------------------------------------------------
+// SCHOLARSHIP ENGINE (SATHII) — versioned, auditable, explainable
+// ---------------------------------------------------------------------------
+
+// status: DRAFT | ACTIVE | RETIRED
+export const scholarshipPolicies = sqliteTable("scholarship_policies", {
+  id: id(),
+  name: text("name").notNull(),
+  academicYearId: text("academic_year_id").references(() => academicYears.id),
+  version: integer("version").notNull().default(1),
+  status: text("status").notNull().default("ACTIVE"),
+
+  // SES = marksWeight * percentage + percentileWeight * percentile (weights sum to 1.0)
+  marksWeight: real("marks_weight").notNull().default(0.7),
+  percentileWeight: real("percentile_weight").notNull().default(0.3),
+  maxScholarshipPercent: real("max_scholarship_percent").notNull().default(100),
+
+  // Top-3-of-class special merit rule
+  top3Enabled: integer("top3_enabled", { mode: "boolean" }).notNull().default(true),
+  top3Percent: real("top3_percent").notNull().default(100),
+
+  // Eligibility minimums (null = not enforced)
+  minPercentage: real("min_percentage"),
+  minPercentile: real("min_percentile"),
+  minMarks: real("min_marks"),
+
+  defaultTuitionFee: real("default_tuition_fee").notNull().default(0),
+
+  createdById: text("created_by_id").references(() => users.id),
+  ...timestamps,
+}, (t) => ({
+  uniq: uniqueIndex("scholarship_policies_name_version_idx").on(t.name, t.version),
+}));
+
+export const scholarshipSlabs = sqliteTable("scholarship_slabs", {
+  id: id(),
+  policyId: text("policy_id").notNull().references(() => scholarshipPolicies.id),
+  minScore: real("min_score").notNull(), // inclusive
+  maxScore: real("max_score"), // exclusive upper bound; null = no upper bound
+  scholarshipPercent: real("scholarship_percent").notNull(),
+  order: integer("order").notNull().default(0),
+});
+
+// category: TOP_3_CLASS_MERIT | SES_SCHOLARSHIP | NO_SCHOLARSHIP | NOT_ELIGIBLE | DISQUALIFIED
+export const scholarshipResults = sqliteTable("scholarship_results", {
+  id: id(),
+  resultRecordId: text("result_record_id").notNull().references(() => resultRecords.id),
+  studentId: text("student_id").notNull().references(() => students.id),
+  policyId: text("policy_id").notNull().references(() => scholarshipPolicies.id),
+
+  percentage: real("percentage").notNull(),
+  percentile: real("percentile"),
+  classRank: integer("class_rank"),
+  overallRank: integer("overall_rank"),
+  sesScore: real("ses_score"),
+
+  eligibilityStatus: text("eligibility_status").notNull(), // ELIGIBLE | NOT_ELIGIBLE | INCOMPLETE
+  ineligibilityReason: text("ineligibility_reason"),
+
+  scholarshipCategory: text("scholarship_category").notNull(),
+  scholarshipPercentage: real("scholarship_percentage").notNull(),
+
+  tuitionFee: real("tuition_fee").notNull().default(0),
+  scholarshipAmount: real("scholarship_amount").notNull().default(0),
+  netTuitionFee: real("net_tuition_fee").notNull().default(0),
+
+  explanation: text("explanation").notNull(),
+
+  isOverride: integer("is_override", { mode: "boolean" }).notNull().default(false),
+  calculatedPercentage: real("calculated_percentage"), // preserved original when overridden
+  overrideReason: text("override_reason"),
+  overrideById: text("override_by_id").references(() => users.id),
+
+  calculationVersion: text("calculation_version").notNull().default("SCHOLARSHIP_ENGINE_v1.0"),
+  ...timestamps,
+  updatedAt: text("updated_at").$defaultFn(() => new Date().toISOString()),
+}, (t) => ({
+  uniq: uniqueIndex("scholarship_results_record_idx").on(t.resultRecordId),
+  studentIdx: index("scholarship_results_student_idx").on(t.studentId),
+}));
+
+// ---------------------------------------------------------------------------
 // AUDIT LOG
 // ---------------------------------------------------------------------------
 
