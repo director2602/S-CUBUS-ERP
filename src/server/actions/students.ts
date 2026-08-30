@@ -2,7 +2,7 @@
 
 import { db } from "@/db/client";
 import { students, studentIdentifiers, centres } from "@/db/schema";
-import { requireRoleAction, requireUser } from "@/lib/session";
+import { requireRoleAction, requireUserAction } from "@/lib/session";
 import { writeAuditLog } from "@/server/audit";
 import { revalidatePath } from "next/cache";
 import { eq, or, like } from "drizzle-orm";
@@ -77,7 +77,7 @@ export async function createStudent(formData: FormData): Promise<CreateStudentRe
 
 /** Global search across Name, SCID, SATHII KEY, Roll Number (spec §4). */
 export async function searchStudents(query: string) {
-  await requireUser();
+  await requireUserAction();
   const q = query.trim();
   if (!q) return [];
 
@@ -104,7 +104,7 @@ export async function searchStudents(query: string) {
 }
 
 export async function listStudents(centreId?: string) {
-  await requireUser();
+  await requireUserAction();
   const rows = centreId
     ? db.select().from(students).where(eq(students.centreId, centreId)).all()
     : db.select().from(students).all();
@@ -112,7 +112,7 @@ export async function listStudents(centreId?: string) {
 }
 
 export async function getStudentFull(studentId: string) {
-  await requireUser();
+  await requireUserAction();
   const student = db.select().from(students).where(eq(students.id, studentId)).get();
   if (!student) return null;
   const identifiers = db

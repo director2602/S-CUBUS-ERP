@@ -28,6 +28,23 @@ export async function requireUser(): Promise<SessionUser> {
   return user;
 }
 
+/**
+ * For read-only Server Actions invoked directly from client components
+ * (e.g. a live search box) rather than a page load — a mid-call redirect()
+ * doesn't reliably reach the user in that context (it isn't a form action
+ * or page navigation), so it can fail silently instead of bouncing to
+ * /login. Throws a plain, catchable Error instead; callers should catch it
+ * and show a clear message rather than failing silently.
+ */
+export async function requireUserAction(): Promise<SessionUser> {
+  const session = await getServerSession(authOptions);
+  const user = session?.user as SessionUser | undefined;
+  if (!user || !userStillExists(user.id)) {
+    throw new Error("Your session has expired. Please refresh the page and sign in again.");
+  }
+  return user;
+}
+
 export async function requireRole(minimum: string) {
   const { roleAtLeast } = await import("@/lib/auth");
   const user = await requireUser();
